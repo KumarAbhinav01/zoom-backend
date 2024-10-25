@@ -1,5 +1,6 @@
 // Simple Express server with Swagger and MVC structure
 const express = require("express");
+const cors = require("cors"); // Import the cors package
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const healthController = require('./controllers/healthController');
@@ -7,6 +8,9 @@ const app = express();
 const port = 8081;
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+// Enable CORS for all routes
+app.use(cors());
 
 // Middleware to parse JSON requests
 app.use(express.json());
