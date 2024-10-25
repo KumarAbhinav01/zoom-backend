@@ -40,7 +40,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Routes
 app.use('/api/', require('./routes/healthRoutes'));
 app.use('/api/locations', require('./routes/locationRoutes'));
-// app.use('/api/cars', require('./routes/carRoutes'));
+app.use('/api/cars', require('./routes/carRoutes'));
+app.use('/api/trucks', require('./routes/truckRoutes'));
 // app.use('/api/users', require('./routes/userRoutes'));
 
 // Root route
