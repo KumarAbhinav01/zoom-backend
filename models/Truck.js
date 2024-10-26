@@ -10,6 +10,7 @@ const TruckSchema = new mongoose.Schema({
   pricePerDay: { type: Number, required: true },
   location: { type: mongoose.Schema.Types.ObjectId, ref: 'Location', required: true },
   image: { type: String, required: true },
+  gallery: [{ type: String }],
   features: [String],
   ratings: [{ type: Number }],
   availability: [{

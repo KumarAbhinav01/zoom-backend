@@ -18,7 +18,6 @@ const truckController = require('../controllers/truckController.js');
  *         - pricePerDay
  *         - location
  *         - image
- *         - host
  *       properties:
  *         make:
  *           type: string
@@ -48,38 +47,22 @@ const truckController = require('../controllers/truckController.js');
  *           description: ID of the location where the truck is available
  *         image:
  *           type: string
- *           description: URL of the truck image
+ *           description: URL of the main truck image
+ *         gallery:
+ *           type: array
+ *           items:
+ *             type: string
+ *           description: URLs of additional truck images
  *         features:
  *           type: array
  *           items:
  *             type: string
  *           description: List of truck features
- *         host:
- *           type: string
- *           description: ID of the user hosting the truck
  *         ratings:
  *           type: array
  *           items:
  *             type: number
  *           description: List of ratings
- *         reviews:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               user:
- *                 type: string
- *                 description: ID of the user who left the review
- *               rating:
- *                 type: number
- *                 description: Rating given in the review
- *               comment:
- *                 type: string
- *                 description: Review comment
- *               date:
- *                 type: string
- *                 format: date-time
- *                 description: Date of the review
  *         availability:
  *           type: array
  *           items:
@@ -105,18 +88,13 @@ const truckController = require('../controllers/truckController.js');
  *         capacity: "1 ton"
  *         pricePerDay: 2000
  *         location: "60d725b3e6c8f32b4c9f5d31"
- *         image: "https://example.com/tata-ace.jpg"
- *         features: ["GPS Tracking", "Air Conditioning", "Power Steering"]
- *         host: "60d725b3e6c8f32b4c9f5d32"
- *         ratings: [4.5, 5, 4.8]
- *         reviews: [
- *           {
- *             user: "60d725b3e6c8f32b4c9f5d33",
- *             rating: 4.5,
- *             comment: "Great truck, very reliable",
- *             date: "2024-03-15T14:30:00Z"
- *           }
+ *         image: "https://example.com/tata-ace-main.jpg"
+ *         gallery: [
+ *           "https://example.com/tata-ace-side.jpg",
+ *           "https://example.com/tata-ace-interior.jpg"
  *         ]
+ *         features: ["GPS Tracking", "Air Conditioning", "Power Steering"]
+ *         ratings: [4.5, 5, 4.8]
  *         availability: [
  *           {
  *             startDate: "2024-03-20",
@@ -150,10 +128,6 @@ const truckController = require('../controllers/truckController.js');
  *           type: string
  *           format: date
  *         description: End date of rental period
- *     example:
- *       - location: "60d725b3e6c8f32b4c9f5d31"
- *       - startDate: "2024-03-20"
- *       - endDate: "2024-03-25"
  *     responses:
  *       200:
  *         description: List of available trucks
@@ -181,14 +155,23 @@ const truckController = require('../controllers/truckController.js');
  *                     description: The transmission type
  *                   image:
  *                     type: string
- *                     description: URL of the truck image
+ *                     description: URL of the main truck image
+ *                   gallery:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                     description: URLs of additional truck images
  *             example:
  *               - _id: "671bb7cb2a0cdf263bed1911"
  *                 make: "Tata"
  *                 model: "Ace"
  *                 year: 2024
  *                 transmission: "Manual"
- *                 image: "https://smalltrucks.tatamotors.com/sites/default/files/product/images/2%20Ace%20Gold%20CNG%20Plus.png"
+ *                 image: "https://example.com/tata-ace-main.jpg"
+ *                 gallery: [
+ *                   "https://example.com/tata-ace-side.jpg",
+ *                   "https://example.com/tata-ace-interior.jpg"
+ *                 ]
  *       400:
  *         description: Missing required parameters
  *       500:
@@ -274,6 +257,56 @@ const truckController = require('../controllers/truckController.js');
  *         description: Truck deleted
  *       404:
  *         description: Truck not found
+ * /api/trucks/{truckId}/availability/{availabilityId}:
+ *   put:
+ *     summary: Update a specific availability period for a truck
+ *     tags: [Trucks]
+ *     parameters:
+ *       - in: path
+ *         name: truckId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The truck ID
+ *       - in: path
+ *         name: availabilityId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The availability period ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *                 description: Start date of availability (YYYY-MM-DD)
+ *               endDate:
+ *                 type: string
+ *                 format: date
+ *                 description: End date of availability (YYYY-MM-DD)
+ *               isAvailable:
+ *                 type: boolean
+ *                 description: Whether the truck is available during this period
+ *           example:
+ *             startDate: "2024-05-23"
+ *             endDate: "2024-06-01"
+ *             isAvailable: false
+ *     responses:
+ *       200:
+ *         description: Updated truck
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Truck'
+ *       400:
+ *         description: Invalid input or date format
+ *       404:
+ *         description: Truck or availability period not found
  */
 
 router.get('/', truckController.getTrucks);
@@ -281,5 +314,6 @@ router.post('/', truckController.createTruck);
 router.get('/:id', truckController.getTruck);
 router.put('/:id', truckController.updateTruck);
 router.delete('/:id', truckController.deleteTruck);
+router.put('/:truckId/availability/:availabilityId', truckController.updateTruckAvailability);
 
 module.exports = router;

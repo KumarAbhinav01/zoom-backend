@@ -35,7 +35,7 @@ exports.getTrucks = async (req, res) => {
     };
 
     const trucks = await Truck.find(query)
-      .select('_id make model year transmission image')
+      .select('_id make model year transmission image gallery')
       .lean();
 
     res.json(trucks);
@@ -86,5 +86,50 @@ exports.deleteTruck = async (req, res) => {
     res.json({ message: 'Truck deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// Update truck availability
+exports.updateTruckAvailability = async (req, res) => {
+  try {
+    const { truckId, availabilityId } = req.params;
+    const { startDate, endDate, isAvailable } = req.body;
+
+    // Convert string dates to Date objects
+    const convertedStartDate = startDate ? new Date(startDate) : undefined;
+    const convertedEndDate = endDate ? new Date(endDate) : undefined;
+
+    // Validate dates
+    if (convertedStartDate && isNaN(convertedStartDate.getTime())) {
+      return res.status(400).json({ message: 'Invalid start date format. Use YYYY-MM-DD.' });
+    }
+    if (convertedEndDate && isNaN(convertedEndDate.getTime())) {
+      return res.status(400).json({ message: 'Invalid end date format. Use YYYY-MM-DD.' });
+    }
+
+    // Prepare update object
+    const updateObj = {};
+    if (convertedStartDate) updateObj['availability.$.startDate'] = convertedStartDate;
+    if (convertedEndDate) updateObj['availability.$.endDate'] = convertedEndDate;
+    if (isAvailable !== undefined) updateObj['availability.$.isAvailable'] = isAvailable;
+
+    const truck = await Truck.findOneAndUpdate(
+      { 
+        _id: truckId, 
+        'availability._id': availabilityId 
+      },
+      { 
+        $set: updateObj
+      },
+      { new: true }
+    );
+
+    if (!truck) {
+      return res.status(404).json({ message: 'Truck or availability period not found' });
+    }
+
+    res.json(truck);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };
