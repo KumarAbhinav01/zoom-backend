@@ -34,6 +34,15 @@ const swaggerOptions = {
           description: 'Production server',
         },
     ],
+    components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
   },
   apis: ['./routes/*.js'],
 };
@@ -46,7 +55,7 @@ app.use('/api/', require('./routes/healthRoutes'));
 app.use('/api/locations', require('./routes/locationRoutes'));
 app.use('/api/cars', require('./routes/carRoutes'));
 app.use('/api/trucks', require('./routes/truckRoutes'));
-// app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 
 // Root route
 app.get("/", (req, res) => {
