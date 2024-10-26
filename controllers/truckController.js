@@ -26,10 +26,12 @@ exports.getTrucks = async (req, res) => {
     let query = {
       location: location,
       availability: {
-        $elemMatch: {
-          startDate: { $lte: start },
-          endDate: { $gte: end },
-          isAvailable: true
+        $not: {
+          $elemMatch: {
+            startDate: { $lt: end },
+            endDate: { $gt: start },
+            isAvailable: false
+          }
         }
       }
     };

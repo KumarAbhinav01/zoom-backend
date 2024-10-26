@@ -56,6 +56,7 @@ app.use('/api/locations', require('./routes/locationRoutes'));
 app.use('/api/cars', require('./routes/carRoutes'));
 app.use('/api/trucks', require('./routes/truckRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/bookings', require('./routes/bookingRoutes'));
 
 // Root route
 app.get("/", (req, res) => {
