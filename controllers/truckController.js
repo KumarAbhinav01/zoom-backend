@@ -5,7 +5,6 @@ exports.getTrucks = async (req, res) => {
   try {
     const { location, startDate, endDate } = req.query;
 
-    // Validate that all required parameters are present
     if (!location || !startDate || !endDate) {
       return res.status(400).json({ message: "Location, startDate, and endDate are required parameters" });
     }
@@ -13,34 +12,36 @@ exports.getTrucks = async (req, res) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Ensure the dates are valid
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return res.status(400).json({ message: "Invalid date format. Please use YYYY-MM-DD." });
+      return res.status(400).json({ message: "Invalid date format. Please use YYYY-MM-DD" });
     }
 
-    // Ensure startDate is not after endDate
     if (start > end) {
       return res.status(400).json({ message: "startDate must be before or equal to endDate" });
     }
 
-    let query = {
-      location: location,
-      availability: {
-        $not: {
-          $elemMatch: {
-            startDate: { $lt: end },
-            endDate: { $gt: start },
-            isAvailable: false
-          }
-        }
-      }
-    };
-
-    const trucks = await Truck.find(query)
-      .select('_id make model year transmission image gallery')
+    // First, get all trucks from the specified location
+    const trucks = await Truck.find({ location })
+      .select('_id make model year transmission image gallery fuelType capacity pricePerDay features availability')
       .lean();
 
-    res.json(trucks);
+    // Then filter trucks based on availability
+    const availableTrucks = trucks.filter(truck => {
+      // Check if there's any availability period that makes the truck unavailable for these dates
+      const isUnavailable = truck.availability.some(period => 
+        !period.isAvailable && 
+        period.startDate <= end && 
+        period.endDate >= start
+      );
+      
+      // Return trucks that are available (not unavailable)
+      return !isUnavailable;
+    });
+
+    // Remove availability from the response
+    const formattedTrucks = availableTrucks.map(({ availability, ...truck }) => truck);
+
+    res.json(formattedTrucks);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

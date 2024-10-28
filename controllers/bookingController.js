@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 const Truck = require('../models/Truck');
+const User = require('../models/User');
 
 exports.createBooking = async (req, res) => {
   try {
@@ -11,26 +12,27 @@ exports.createBooking = async (req, res) => {
       return res.status(404).json({ message: 'Truck not found' });
     }
 
-    // Check if the truck is available for the requested dates
-    const isAvailable = truck.availability.some(a => 
-      a.startDate <= new Date(startDate) && 
-      a.endDate >= new Date(endDate) && 
-      a.isAvailable
+    const bookingStartDate = new Date(startDate);
+    const bookingEndDate = new Date(endDate);
+
+    // Check if there's any overlapping unavailable period
+    const hasUnavailablePeriod = truck.availability.some(a => 
+      a.startDate <= bookingEndDate && 
+      a.endDate >= bookingStartDate && 
+      !a.isAvailable
     );
 
-    if (!isAvailable) {
+    if (hasUnavailablePeriod) {
       return res.status(400).json({ message: 'Truck is not available for the selected dates' });
     }
 
-    // Check if there's an existing booking for the same dates
+    // Check if there's an existing booking
     const existingBooking = await Booking.findOne({
       truck: truckId,
+      status: { $ne: 'canceled' },
       $or: [
-        { startDate: { $lte: new Date(endDate) }, endDate: { $gte: new Date(startDate) } },
-        { startDate: { $gte: new Date(startDate), $lte: new Date(endDate) } },
-        { endDate: { $gte: new Date(startDate), $lte: new Date(endDate) } }
-      ],
-      status: { $ne: 'canceled' }
+        { startDate: { $lte: bookingEndDate }, endDate: { $gte: bookingStartDate } }
+      ]
     });
 
     if (existingBooking) {
@@ -38,33 +40,35 @@ exports.createBooking = async (req, res) => {
     }
 
     // Calculate total price
-    const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+    const days = Math.ceil((bookingEndDate - bookingStartDate) / (1000 * 60 * 60 * 24));
     const totalPrice = days * truck.pricePerDay;
 
     const booking = new Booking({
       user: userId,
       truck: truckId,
-      startDate,
-      endDate,
+      startDate: bookingStartDate,
+      endDate: bookingEndDate,
       totalPrice,
-      status: 'confirmed' // Automatically set status to confirmed
+      status: 'confirmed'
     });
 
     await booking.save();
 
-    // Update truck availability
-    await Truck.findOneAndUpdate(
-      {
-        _id: truckId,
-        'availability.startDate': { $lte: new Date(startDate) },
-        'availability.endDate': { $gte: new Date(endDate) }
-      },
-      {
-        $set: {
-          'availability.$.isAvailable': false
+    // Add booking to user's bookings array
+    await User.findByIdAndUpdate(userId, {
+      $push: { bookings: booking._id }
+    });
+
+    // Add new availability entry for the booked period
+    await Truck.findByIdAndUpdate(truckId, {
+      $push: {
+        availability: {
+          startDate: bookingStartDate,
+          endDate: bookingEndDate,
+          isAvailable: false
         }
       }
-    );
+    });
 
     res.status(201).json({
       message: 'Booking confirmed successfully',

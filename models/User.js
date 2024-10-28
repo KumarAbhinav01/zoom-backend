@@ -8,6 +8,7 @@ const UserSchema = new mongoose.Schema({
   isHost: { type: Boolean, default: false },
   phoneNumber: { type: String },
   profilePicture: { type: String },
+  bookings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Booking' }],
   createdAt: { type: Date, default: Date.now },
 });
 
